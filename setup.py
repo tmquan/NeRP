@@ -22,7 +22,7 @@ if need_pytorch_lightning:
     os.system("pip install pytorch_lightning -U --force-reinstall")
 
 #
-need_pytorch3d=True
+need_pytorch3d=False
 try:
     import pytorch3d
 except ModuleNotFoundError:

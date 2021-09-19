@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
+from pytorch_lightning.callbacks import LearningRateMonitor
 
 from callback import *
 from model import *
@@ -20,7 +21,8 @@ if __name__ == "__main__":
     # Model arguments
     parser.add_argument("--batch_size", type=int, default=1, help="size of the batches")
     parser.add_argument("--shape", type=int, default=256, help="spatial size of the tensor")
-    parser.add_argument("--lr", type=float, default=0.00002, help="adam: learning rate")
+    parser.add_argument("--epochs", type=int, default=501, help="number of epochs")
+    parser.add_argument("--lr", type=float, default=2e-4, help="adam: learning rate")
     parser.add_argument("--b1", type=float, default=0.5, help="adam: 1st order momentum")
     parser.add_argument("--b2", type=float, default=0.999, help="adam: 2nd order momentum")
     parser.add_argument("--ckpt", type=str, default=None, help="path to checkpoint")
@@ -46,7 +48,7 @@ if __name__ == "__main__":
         # mode='min',
         every_n_epochs=10, 
     )
-
+    lr_callback = LearningRateMonitor(logging_interval='step')
     tensorboard_callback = TensorboardGenerativeModelImageProjector()
     # Logger
     tensorboard_logger = TensorBoardLogger(save_dir=hparams.logdir, log_graph=True)
@@ -54,12 +56,19 @@ if __name__ == "__main__":
     # Init model with callbacks
     trainer = Trainer.from_argparse_args(
         hparams, 
+        max_epochs=hparams.epochs,
         resume_from_checkpoint = hparams.ckpt, #"logs/default/version_0/epoch=50.ckpt",
         logger=[tensorboard_logger],
         callbacks=[
+            lr_callback,
             checkpoint_callback, 
             # tensorboard_callback
         ],
+        # precision=16,
+        # stochastic_weight_avg=True,
+        auto_scale_batch_size=True, 
+        # gradient_clip_val=2.0, 
+        # gradient_clip_algorithm='norm', #'norm', #'value'
     )
 
     # Create data module
